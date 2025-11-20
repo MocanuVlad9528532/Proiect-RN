@@ -55,9 +55,9 @@ project-name/
 
 | **Caracteristică** | **Tip** | **Unitate** | **Descriere** | **Domeniu valori** |
 |-------------------|---------|-------------|---------------|--------------------|
-| acceleratie | numeric | m/s | Acceleratie robotului | 0–150 |
+| acceleratie | numeric | mm/s^2 | Acceleratie robotului | 0–150 |
 | pozitie | numeric | mm | Pozitia robotului | {x,y} |
-| viteza | numeric | m/s | Viteza robotului | 0-150 |
+| viteza | numeric | mm/s | Viteza robotului | 0-150 |
 
 
 **Fișier recomandat:**  `data/README.md`
