@@ -68,22 +68,35 @@ project-name/
 
 ### 3.1 Statistici descriptive aplicate
 
-* **Medie, mediană, deviație standard**
-* **Min–max și quartile**
-* **Distribuții pe caracteristici** (histograme)
-* **Identificarea outlierilor** (IQR / percentile)
+* **Medie, mediană, deviație standard** : Deoarece datele sunt generate uniform pentru traiectoria ideală, media pozițiilor este centrată în jurul valorii de 500 mm. Deviația standard a erorii variază în funcție de clasă: mică pentru 'Precizie Mare' și ridicată pentru 'Precizie Mică'
+  
+* **Min–max și quartile** : Domeniul valorilor de intrare este fixat prin parametrii de simulare: Poziție [0 - 1000] mm, Viteză [0 - 100] mm/s, Accelerație [0 - 50] mm/s². Nu există valori care să depășească aceste limite fizice impuse.
+  
+* **Distribuții pe caracteristici** (histograme) : Caracteristicile 'Ideale' urmează o distribuție uniformă (acoperă tot spațiul de lucru). Caracteristicile 'Reale' urmează o distribuție uniformă suprapusă cu un zgomot Gaussian (distribuție normală), specific fiecărei clase de eroare.
+  
+* **Identificarea outlierilor** (IQR / percentile) : În acest set de date, 'outlierii' (valorile cu abateri mari) nu sunt erori de date, ci reprezintă instanțele clasei 'Precizie Mică'. Acestea sunt esențiale pentru ca modelul să învețe să detecteze defectele.
 
 ### 3.2 Analiza calității datelor
 
-* **Detectarea valorilor lipsă** (% pe coloană)
-* **Detectarea valorilor inconsistente sau eronate**
-* **Identificarea caracteristicilor redundante sau puternic corelate**
+* **Detectarea valorilor lipsă** (% pe coloană) : 0% valori lipsă. Fiind un set de date sintetic generat algoritmic, toate câmpurile sunt completate automat la generare. Nu necesită imputare.
+  
+* **Detectarea valorilor inconsistente sau eronate** : Nu există valori inconsistente (ex: viteză negativă sau accelerație infinită) deoarece funcțiile de generare folosesc np.abs() și limite fizice hard-codate. Datele respectă legile cinematice de bază.
+  
+* **Identificarea caracteristicilor redundante sau puternic corelate** : Există o corelație puternică (>0.9) între coloanele 'Ideal' și 'Real' corespunzătoare (ex: P_IX vs P_RX). Această redundanță este intenționată și necesară, deoarece diferența subtilă dintre ele (reziduul) este exact informația pe care Rețeaua Neuronală trebuie să o învețe.
 
 ### 3.3 Probleme identificate
 
-* [exemplu] Feature X are 8% valori lipsă
-* [exemplu] Distribuția feature Y este puternic neuniformă
-* [exemplu] Variabilitate ridicată în clase (class imbalance)
+[exemplu] Feature X are 8% valori lipsă:
+
+Înlocuiește cu: "Diferențe majore de scară între caracteristici: Poziția are valori până la 1000, în timp ce Accelerația doar până la 50. Acest lucru impune obligatoriu Normalizarea (MinMax Scaling) înainte de antrenare."
+
+[exemplu] Distribuția feature Y este puternic neuniformă:
+
+Înlocuiește cu: "Distribuție perfect echilibrată a claselor: Nu există 'Class Imbalance'. Setul a fost generat forțat cu 33% eșantioane pentru fiecare dintre cele 3 clase (Mare, Medie, Mică), eliminând riscul de biasare a modelului."
+
+[exemplu] Variabilitate ridicată în clase:
+
+Înlocuiește cu: "Suprapunere marginală la granița claselor: Există o ușoară zonă de suprapunere probabilistică între erorile clasei 'Medie' și 'Mică', simulând incertitudinea reală a senzorilor, ceea ce poate duce la o eroare mică de clasificare la testare."
 
 ---
 
@@ -91,35 +104,66 @@ project-name/
 
 ### 4.1 Curățarea datelor
 
-* **Eliminare duplicatelor**
-* **Tratarea valorilor lipsă:**
-  * Feature A: imputare cu mediană
-  * Feature B: eliminare (30% valori lipsă)
-* **Tratarea outlierilor:** IQR / limitare percentile
+  4.1 Curățarea datelor
+Eliminare duplicatelor:
+
+Nu a fost necesară o etapă explicită, deoarece datele sunt generate algoritmic cu o componentă de zgomot aleatoriu (Gaussian), ceea ce asigură unicitatea fiecărui vector de intrare.
+
+Tratarea valorilor lipsă:
+
+Procent valori lipsă: 0%.
+
+Metodă: Nu se aplică (datele sunt complete prin construcție).
+
+Tratarea outlierilor:
+
+Nu s-a aplicat eliminarea outlierilor (ex: IQR), deoarece valorile extreme (erori mari de poziție) reprezintă tocmai clasa de interes "Precizie Mică". Eliminarea lor ar fi redus capacitatea modelului de a detecta defectele grave.
 
 ### 4.2 Transformarea caracteristicilor
 
-* **Normalizare:** Min–Max / Standardizare
-* **Encoding pentru variabile categoriale**
-* **Ajustarea dezechilibrului de clasă** (dacă este cazul)
+   Normalizare:
+
+Metodă: Min-Max Scaling (scalare în intervalul [0, 1]).
+
+Motiv: Diferențele mari de scară între Poziție (0-1000 mm) și Accelerație (0-50 mm/s²) ar fi destabilizat antrenarea rețelei neuronale.
+
+Implementare: S-a utilizat clasa MinMaxScaler din biblioteca Scikit-Learn.
+
+Encoding pentru variabile categoriale:
+
+Metodă: One-Hot Encoding.
+
+Aplicare: Variabila țintă (eticheta clasei: 0, 1, 2) a fost transformată în vectori binari (ex: Clasa 0 -> [1, 0, 0]) folosind funcția to_categorical din Keras.
+
+Ajustarea dezechilibrului de clasă:
+
+Nu a fost necesară (not applicable). Setul de date a fost generat echilibrat din start (33% pentru fiecare clasă).
 
 ### 4.3 Structurarea seturilor de date
 
-**Împărțire recomandată:**
-* 70–80% – train
-* 10–15% – validation
-* 10–15% – test
+   Împărțire utilizată:
 
-**Principii respectate:**
-* Stratificare pentru clasificare
-* Fără scurgere de informație (data leakage)
-* Statistici calculate DOAR pe train și aplicate pe celelalte seturi
+80% – Set de Antrenare (Training)
+
+20% – Set de Testare (Testing)
+
+(Validarea s-a făcut implicit pe setul de test în timpul antrenării prin parametrul validation_data).
+
+Principii respectate:
+
+Stratificare: Împărțirea a fost aleatorie, dar având un set mare și echilibrat, distribuția claselor s-a păstrat uniformă în ambele seturi.
+
+Data Leakage (Scurgere de informație): S-a evitat prin calcularea parametrilor de scalare (fit) DOAR pe setul de antrenare, iar apoi s-a aplicat transformarea (transform) pe setul de test.
 
 ### 4.4 Salvarea rezultatelor preprocesării
 
-* Date preprocesate în `data/processed/`
-* Seturi train/val/test în foldere dedicate
-* Parametrii de preprocesare în `config/preprocessing_config.*` (opțional)
+   Date preprocesate:
+
+Datele brute au fost salvate în fișierul baza_de_date_robot.csv pentru documentare.
+
+Obiecte de preprocesare:
+
+Obiectul scaler (MinMaxScaler) nu a fost salvat fizic în acest prototip, fiind re-inițializat la fiecare rulare, dar într-un mediu de producție ar fi salvat folosind biblioteca joblib.
 
 ---
 
