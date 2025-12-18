@@ -23,16 +23,18 @@ Această etapă corespunde punctului **6. Configurarea și antrenarea modelului 
 
 ## PREREQUISITE – Verificare Etapa 4 (OBLIGATORIU)
 
+## PREREQUISITE – Verificare Etapa 4 (OBLIGATORIU)
+
 **Înainte de a începe Etapa 5, verificați că aveți din Etapa 4:**
 
-- [ ] **State Machine** definit și documentat în `docs/state_machine.*`
-- [ ] **Contribuție ≥40% date originale** în `data/generated/` (verificabil)
-- [ ] **Modul 1 (Data Logging)** funcțional - produce CSV-uri
-- [ ] **Modul 2 (RN)** cu arhitectură definită dar NEANTRENATĂ (`models/untrained_model.h5`)
-- [ ] **Modul 3 (UI/Web Service)** funcțional cu model dummy
-- [ ] **Tabelul "Nevoie → Soluție → Modul"** complet în README Etapa 4
+- [x] **State Machine** definit și documentat în `docs/state_machine.png` (Diagrama de flux realizată cu Mermaid/PNG)
+- [x] **Contribuție ≥40% date originale** în `baza_de_date_robot.csv` (100% date generate prin simulare cinematică Python)
+- [x] **Modul 1 (Data Logging)** funcțional - produce CSV-uri (Funcția `genereaza_set_date` din `antrenare.py`)
+- [x] **Modul 2 (RN)** cu arhitectură definită (Modelul MLP este definit în `antrenare.py` și salvat ca `model_spdt.h5`)
+- [x] **Modul 3 (UI/Web Service)** funcțional cu model dummy/antrenat (Scriptul `testare.py` realizează vizualizarea grafică)
+- [x] **Tabelul "Nevoie → Soluție → Modul"** complet în README Etapa 4
 
-** Dacă oricare din punctele de mai sus lipsește → reveniți la Etapa 4 înainte de a continua.**
+**Dacă oricare din punctele de mai sus lipsește → reveniți la Etapa 4 înainte de a continua.**
 
 ---
 
@@ -97,28 +99,29 @@ Completați tabelul cu hiperparametrii folosiți și **justificați fiecare aleg
 
 | **Hiperparametru** | **Valoare Aleasă** | **Justificare** |
 |--------------------|-------------------|-----------------|
-| Learning rate | Ex: 0.001 | Valoare standard pentru Adam optimizer, asigură convergență stabilă |
-| Batch size | Ex: 32 | Compromis memorie/stabilitate pentru N=[numărul vostru] samples |
-| Number of epochs | Ex: 50 | Cu early stopping după 10 epoci fără îmbunătățire |
-| Optimizer | Ex: Adam | Adaptive learning rate, potrivit pentru RN cu [numărul vostru] straturi |
-| Loss function | Ex: Categorical Crossentropy | Clasificare multi-class cu K=[numărul vostru] clase |
-| Activation functions | Ex: ReLU (hidden), Softmax (output) | ReLU pentru non-linearitate, Softmax pentru probabilități clase |
+| Learning rate | 0.001 (Default) | Valoare standard pentru optimizatorul Adam; a asigurat o convergență rapidă și stabilă a funcției de cost (Loss) fără oscilații. |
+| Batch size | 32 | Compromis optim între viteza de actualizare a greutăților și stabilitatea gradientului pentru setul de antrenare de 4.200 eșantioane. |
+| Number of epochs | 20 | Analiza curbei de învățare a arătat atingerea platoului (convergență) în jurul epocii 12. S-au ales 20 pentru siguranță, fără overfitting. |
+| Optimizer | Adam | Algoritm adaptiv eficient pentru date cu zgomot (Gaussian noise), care nu necesită ajustarea manuală a ratei de învățare. |
+| Loss function | Categorical Crossentropy | Funcția matematică obligatorie pentru probleme de clasificare Multi-Class (3 clase) cu etichete One-Hot Encoded. |
+| Activation functions | ReLU (hidden), Softmax (output) | **ReLU** în straturile ascunse (16/12 neuroni) pentru a preveni dispariția gradientului. **Softmax** la ieșire pentru a obține o distribuție de probabilitate (suma=1). |
 
-**Justificare detaliată batch size (exemplu):**
-```
-Am ales batch_size=32 pentru că avem N=15,000 samples → 15,000/32 ≈ 469 iterații/epocă.
-Aceasta oferă un echilibru între:
-- Stabilitate gradient (batch prea mic → zgomot mare în gradient)
-- Memorie GPU (batch prea mare → out of memory)
-- Timp antrenare (batch 32 asigură convergență în ~50 epoci pentru problema noastră)
-```
+**Justificare detaliată batch size:**
+```text
+Am ales batch_size=32 pentru setul nostru de date.
+Calcul concret: Avem 4.200 samples de antrenare (70% din 6.000) → 4.200 / 32 ≈ 132 pași (iterații) per epocă.
+
+Această valoare oferă un echilibru ideal pentru proiectul SPDT:
+1. Stabilitate: Gradientul este calculat pe baza mediei a 32 de exemple, reducând zgomotul specific datelor generate sintetic.
+2. Viteză: Rețeaua își actualizează greutățile de 132 de ori pe epocă, permițând o învățare rapidă (convergență în sub 15 epoci).
+3. Generalizare: Batch-ul nu este nici prea mare (care ar duce la o estimare prea "netedă" și blocare în minime locale), nici prea mic (care ar face antrenarea instabilă).
 
 **Resurse învățare rapidă:**
 - Împărțire date: https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.train_test_split.html (video 3 min: https://youtu.be/1NjLMWSGosI?si=KL8Qv2SJ1d_mFZfr)  
 - Antrenare simplă Keras: https://keras.io/examples/vision/mnist_convnet/ (secțiunea „Training”)  
 - Antrenare simplă PyTorch: https://pytorch.org/tutorials/beginner/blitz/cifar10_tutorial.html#training-an-image-classifier (video 2 min: https://youtu.be/ORMx45xqWkA?si=FXyQEhh0DU8VnuVJ)  
 - F1-score: https://scikit-learn.org/stable/modules/generated/sklearn.metrics.f1_score.html (video 4 min: https://youtu.be/ZQlEcyNV6wc?si=VMCl8aGfhCfp5Egi)
-
+```
 
 ---
 
@@ -149,12 +152,25 @@ Includeți **TOATE** cerințele Nivel 1 + următoarele:
 ### Nivel 3 – Bonus (până la 100%)
 
 **Punctaj bonus per activitate:**
+### Nivel 3 (Bonus): Comparare Arhitecturi și Analiză Erori
 
-| **Activitate** |  **Livrabil** |
-|----------------|--------------|
-| Comparare 2+ arhitecturi diferite | Tabel comparativ + justificare alegere finală în README |
-| Export ONNX/TFLite + benchmark latență | Fișier `models/final_model.onnx` + demonstrație <50ms |
-| Confusion Matrix + analiză 5 exemple greșite | `docs/confusion_matrix.png` + analiză în README |
+Pentru a valida alegerea rețelei neuronale (MLP), am comparat performanța acesteia cu un algoritm clasic robust, **Random Forest**.
+
+| Arhitectură | Acuratețe (Test) | Latență (ms/sample) | Avantaje | Dezavantaje |
+| :--- | :--- | :--- | :--- | :--- |
+| **MLP (Propus)** | **99.25%** | 0.103 ms | Acuratețe net superioară (+7% față de RF), capabil să învețe relații complexe neliniare. | Necesită normalizarea datelor (MinMaxScaling). |
+| Random Forest | 92.67% | **0.006 ms** | Extrem de rapid la inferență, nu necesită scalare. | Acuratețe mai mică, ratează cazurile fine de la granița dintre clase. |
+
+**Justificare Alegere Finală:**
+Am ales **MLP (Rețea Neuronală)** deoarece diferența de acuratețe este semnificativă (+6.58%). Deși Random Forest este mai rapid, latența MLP-ului de **0.1 ms** este deja de 500 de ori mai rapidă decât cerința de timp real (50ms), deci viteza nu este o problemă, iar calitatea predicției primează.
+
+### Analiză Erori (Misclassification)
+
+Modelul a comis doar **9 erori** din totalul setului de testare. Analizând primele exemple, am identificat cauza:
+
+* **Exemplu:** Real: `Medie` vs Predicție: `Mare`
+* **Valori:** Erorile de poziție au fost între `13.09 mm` și `18.72 mm`.
+* **Cauză (Feature Conflict):** Clasa "Medie" este centrată pe 12mm eroare. Aceste exemple s-au aflat la limita inferioară a defectului. Probabil că, deși poziția era ușor decalată, profilul de **Viteză și Accelerație** a fost foarte stabil ("curat"), ceea ce a indus rețeaua în eroare, clasificând mișcarea ca fiind "De precizie Mare".
 
 **Resurse bonus:**
 - Export ONNX din PyTorch: [PyTorch ONNX Tutorial](https://pytorch.org/tutorials/beginner/onnx/export_simple_model_to_onnx_tutorial.html)
@@ -163,99 +179,83 @@ Includeți **TOATE** cerințele Nivel 1 + următoarele:
 
 ---
 
-## Verificare Consistență cu State Machine (Etapa 4)
+## Verificare Consistență cu State Machine (Etapa 4 -> Etapa 5)
 
-Antrenarea și inferența trebuie să respecte fluxul din State Machine-ul vostru definit în Etapa 4.
+Implementarea din Etapa 5 respectă fidel stările definite în diagrama State Machine, asigurând coerența între faza de proiectare și cea de execuție software.
 
-**Exemplu pentru monitorizare vibrații lagăr:**
+**Tabel de corespondență pentru Proiectul SPDT (Monitorizare Cinematică Robot):**
 
-| **Stare din Etapa 4** | **Implementare în Etapa 5** |
-|-----------------------|-----------------------------|
-| `ACQUIRE_DATA` | Citire batch date din `data/train/` pentru antrenare |
-| `PREPROCESS` | Aplicare scaler salvat din `config/preprocessing_params.pkl` |
-| `RN_INFERENCE` | Forward pass cu model ANTRENAT (nu weights random) |
-| `THRESHOLD_CHECK` | Clasificare Normal/Uzură pe baza output RN antrenat |
-| `ALERT` | Trigger în UI bazat pe predicție modelului real |
-
-**În `src/app/main.py` (UI actualizat):**
-
-Verificați că **TOATE stările** din State Machine sunt implementate cu modelul antrenat:
-
-```python
-# ÎNAINTE (Etapa 4 - model dummy):
-model = keras.models.load_model('models/untrained_model.h5')  # weights random
-prediction = model.predict(input_scaled)  # output aproape aleator
-
-# ACUM (Etapa 5 - model antrenat):
-model = keras.models.load_model('models/trained_model.h5')  # weights antrenate
-prediction = model.predict(input_scaled)  # predicție REALĂ și corectă
-```
+| **Stare din State Machine** | **Implementare concretă în Cod (Etapa 5)** | **Fișier sursă** |
+|-----------------------------|--------------------------------------------|------------------|
+| `DATA_GENERATION` | Generare scenariu random (Poziție/Viteză) care simulează citirea instantanee a senzorilor. | `testare_etapa5.py` |
+| `PREPROCESS` | Încărcarea scaler-ului salvat (`scaler_spdt.gz`) și normalizarea datelor brute la intervalul [0, 1]. | `testare_etapa5.py` |
+| `RN_INFERENCE` | Executarea `model.predict()` folosind modelul antrenat și salvat (`trained_model.h5`). | `testare_etapa5.py` |
+| `DECISION_LOGIC` | Aplicarea `np.argmax` pe vectorul de probabilități pentru a stabili clasa finală (Mare/Medie/Mică). | `testare_etapa5.py` |
+| `HMI_VISUALIZATION` | Randarea grafică a "Digital Twin-ului" (Punct Ideal vs Real) și afișarea textului de diagnoză. | `testare_etapa5.py` |
 
 ---
+
+**Snippet din codul UI (`testare_etapa5.py`) care demonstrează fluxul:**
+
+```python
+# 1. ACQUIRE (Simulare)
+p_ix = np.random.uniform(200, 800) # ... generare date brute
+
+# 2. PREPROCESS (Consistent cu antrenarea)
+scaler = joblib.load('models/scaler_spdt.gz')
+input_scaled = scaler.transform(input_raw)
+
+# 3. INFERENCE (State-ul principal AI)
+model = load_model('models/trained_model.h5')
+pred_prob = model.predict(input_scaled)
+
+# 4. DECISION & ALERT
+clasa_idx = np.argmax(pred_prob)
+if clasa_idx == 2: # Clasa Precizie Mică
+    print(">>> ALERTA: DEFECT CRITIC DETECTAT!")
+```
 
 ## Analiză Erori în Context Industrial (OBLIGATORIU Nivel 2)
 
 **Nu e suficient să raportați doar acuratețea globală.** Analizați performanța în contextul aplicației voastre industriale:
 
-### 1. Pe ce clase greșește cel mai mult modelul?
+### 5. Analiză Detaliată a Erorilor și Impact Industrial
 
-**Exemplu robotică (predicție traiectorii):**
-```
-Confusion Matrix arată că modelul confundă 'viraj stânga' cu 'viraj dreapta' în 18% din cazuri.
-Cauză posibilă: Features-urile IMU (gyro_z) sunt simetrice pentru viraje în direcții opuse.
-```
+#### 1. Pe ce clase greșește cel mai mult modelul?
 
-**Completați pentru proiectul vostru:**
-```
-[Descrieți confuziile principale între clase și cauzele posibile]
-```
+**Răspuns:**
+Matricea de Confuzie și analiza erorilor individuale arată că modelul tinde să confunde clasa **'Precizie Medie' (Real)** cu clasa **'Precizie Mare' (Predicție)**.
 
-### 2. Ce caracteristici ale datelor cauzează erori?
+Concret, în scenariile de test, majoritatea erorilor au apărut când abaterea de poziție a fost între **13mm și 18mm** (zona de graniță inferioară a clasei Medii).
+**Cauză posibilă:** Deși poziția avea o abatere semnificativă pentru a fi catalogată drept "Medie", profilurile de Viteză și Accelerație au rămas relativ "curate" (fără zgomot mare/vibrații), ceea ce a indus rețeaua în eroare, clasificând comportamentul drept "Optim/Mare".
 
-**Exemplu vibrații motor:**
-```
-Modelul eșuează când zgomotul de fond depășește 40% din amplitudinea semnalului util.
-În mediul industrial, acest nivel de zgomot apare când mai multe motoare funcționează simultan.
-```
+#### 2. Ce caracteristici ale datelor cauzează erori?
 
-**Completați pentru proiectul vostru:**
-```
-[Identificați condițiile în care modelul are performanță slabă]
-```
+**Răspuns:**
+Modelul are performanță mai slabă în cazurile de **"Boundary Effect"** (Graniță între clase).
+Caracteristicile care cauzează confuzia sunt suprapunerile distribuțiilor Gaussiene. Când un senzor generează o valoare aflată la "coada" distribuției (ex: o eroare mică pentru clasa Medie care se suprapune matematic cu o eroare mare pentru clasa Mare), rețeaua neuronală are dificultăți în a trasa o linie de demarcație perfectă, mai ales dacă zgomotul pe derivatele de ordin superior (viteză/accelerație) este redus.
 
-### 3. Ce implicații are pentru aplicația industrială?
+#### 3. Ce implicații are pentru aplicația industrială?
 
-**Exemplu detectare defecte sudură:**
-```
-FALSE NEGATIVES (defect nedetectat): CRITIC → risc rupere sudură în exploatare
-FALSE POSITIVES (alarmă falsă): ACCEPTABIL → piesa este re-inspectată manual
+**Răspuns:**
+Analiza impactului pentru Robotul Industrial SPDT:
 
-Prioritate: Minimizare false negatives chiar dacă cresc false positives.
-Soluție: Ajustare threshold clasificare de la 0.5 → 0.3 pentru clasa 'defect'.
-```
+* **FALSE NEGATIVES (Real: Uzură Medie/Critică → Predicție: Funcționare Optimă):**
+    * **CRITIC:** Robotul continuă să opereze cu eroare, ducând la rebutarea pieselor (ex: sudură decalată cu 1.5cm) sau chiar coliziuni ușoare. Acesta este cel mai periculos scenariu.
+* **FALSE POSITIVES (Real: Optim → Predicție: Uzură):**
+    * **ACCEPTABIL:** Linia se oprește pentru o verificare de mentenanță inutilă. Se pierde timp și bani, dar se păstrează siguranța echipamentului și calitatea produsului.
 
-**Completați pentru proiectul vostru:**
-```
-[Analizați impactul erorilor în contextul aplicației voastre și prioritizați]
-```
+**Prioritate:** Minimizarea drastică a *False Negatives* (nu vrem să livrăm piese defecte).
+**Soluție operațională:** Ajustarea deciziei - dacă probabilitatea pentru clasa 'Medie' depășește 30% (chiar dacă 'Mare' are 60%), sistemul va ridica totuși un avertisment preventiv (Bias spre siguranță).
 
-### 4. Ce măsuri corective propuneți?
+#### 4. Ce măsuri corective propuneți?
 
-**Exemplu clasificare imagini piese:**
-```
-Măsuri corective:
-1. Colectare 500+ imagini adiționale pentru clasa minoritară 'zgârietură ușoară'
-2. Implementare filtrare Gaussian blur pentru reducere zgomot cameră industrială
-3. Augmentare perspective pentru simulare unghiuri camera variabile (±15°)
-4. Re-antrenare cu class weights: [1.0, 2.5, 1.2] pentru echilibrare
-```
+**Răspuns:**
+Măsuri corective propuse pentru versiunea 2.0 a sistemului:
 
-**Completați pentru proiectul vostru:**
-```
-[Propuneți minimum 3 măsuri concrete pentru îmbunătățire]
-```
-
----
+1.  **Antrenare cu "Cost-Sensitive Learning":** Penalizarea mai dură a erorilor de tip False Negative în funcția de Loss (ex: greșeala de a nu detecta un defect costă de 10 ori mai mult decât o alarmă falsă).
+2.  **Augmentare specifică pe granițe:** Generarea sintetică a 1.000 de exemple suplimentare fix în intervalul problematic (10mm - 20mm eroare) pentru a forța modelul să învețe mai bine această tranziție fină.
+3.  **Adăugarea caracteristicii "Jerk" (Derivata accelerației):** Introducerea șocului mecanic ca input (Input #9). Chiar dacă poziția pare ok, un "Jerk" mare indică clar o problemă mecanică (uzură rulmenți), ajutând la discriminarea claselor în zonele de suprapunere.
 
 ## Structura Repository-ului la Finalul Etapei 5
 
@@ -484,5 +484,6 @@ Exemplu:
 3. Push: `git push origin main --tags`
 
 ---
+
 
 **Mult succes! Această etapă demonstrează că Sistemul vostru cu Inteligență Artificială (SIA) funcționează în condiții reale!**
