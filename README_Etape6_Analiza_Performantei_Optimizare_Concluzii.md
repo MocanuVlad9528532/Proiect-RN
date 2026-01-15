@@ -2,9 +2,9 @@
 
 **Disciplina:** Rețele Neuronale  
 **Instituție:** POLITEHNICA București – FIIR  
-**Student:** [Nume Prenume]  
-**Link Repository GitHub:** [URL complet]  
-**Data predării:** [Data]
+**Student:** Mocanu Vlad-Cristian 
+**Link Repository GitHub:**  
+**Data predării:** 1/15/2026
 
 ---
 ## Scopul Etapei 6
@@ -60,13 +60,13 @@ Deși Etapa 6 încheie ciclul formal de dezvoltare, **procesul iterativ continu�
 
 **Înainte de a începe Etapa 6, verificați că aveți din Etapa 5:**
 
-- [ ] **Model antrenat** salvat în `models/trained_model.h5` (sau `.pt`, `.lvmodel`)
-- [ ] **Metrici baseline** raportate: Accuracy ≥65%, F1-score ≥0.60
-- [ ] **Tabel hiperparametri** cu justificări completat
-- [ ] **`results/training_history.csv`** cu toate epoch-urile
-- [ ] **UI funcțional** care încarcă modelul antrenat și face inferență reală
-- [ ] **Screenshot inferență** în `docs/screenshots/inference_real.png`
-- [ ] **State Machine** implementat conform definiției din Etapa 4
+- [ x] **Model antrenat** salvat în `models/trained_model.h5` (sau `.pt`, `.lvmodel`)
+- [ x] **Metrici baseline** raportate: Accuracy ≥65%, F1-score ≥0.60
+- [ x] **Tabel hiperparametri** cu justificări completat
+- [ x] **`results/training_history.csv`** cu toate epoch-urile
+- [ x] **UI funcțional** care încarcă modelul antrenat și face inferență reală
+- [ x] **Screenshot inferență** în `docs/screenshots/inference_real.png`
+- [ x] **State Machine** implementat conform definiției din Etapa 4
 
 **Dacă oricare din punctele de mai sus lipsește → reveniți la Etapa 5 înainte de a continua.**
 
@@ -77,7 +77,19 @@ Deși Etapa 6 încheie ciclul formal de dezvoltare, **procesul iterativ continu�
 Completați **TOATE** punctele următoare:
 
 1. **Minimum 4 experimente de optimizare** (variație sistematică a hiperparametrilor)
+     Pentru a valida riguros performanța modelului, au fost rulate 4 experimente distincte. Scopul a fost identificarea echilibrului perfect între capacitatea rețelei și capacitatea de generalizare pe date noi.
+
+| ID Exp. | Nume Experiment | Arhitectură (Hidden Layers) | Hiperparametri (LR / Batch) | Regularizare | Acuratețe (Test) | F1-Score | Observații & Concluzii |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| **Exp 1** | **Baseline (Etapa 5)** | `[32, 16]` | LR=0.001<br>Batch=32 | Niciuna | **99.10%** | 0.9905 | Modelul de referință. Rapid, dar ușor instabil pe datele de test cu zgomot mare (variații ale Loss-ului). |
+| **Exp 2** | **High Capacity** | `[128, 64, 32]` | LR=0.001<br>Batch=32 | Niciuna | **98.85%** | 0.9870 | **Overfitting (Supra-antrenare)**. Modelul a fost prea complex, învățând zgomotul din datele de antrenament în loc de regulile generale. |
+| **Exp 3** | **High Regularization** | `[32, 16]` | LR=0.001<br>Batch=32 | Dropout (0.5) | **97.40%** | 0.9720 | **Underfitting**. Dropout-ul agresiv (50%) a "șters" prea multă informație, împiedicând modelul să învețe corelațiile fine. |
+| **Exp 4** | **OPTIMIZED (Final)** | **`[64, 32, 16]`** | **LR=0.0005**<br>**Batch=16** | **Dropout (0.2)**<br>**Batch Norm** | **99.85%** | **0.9984** | **Câștigător**. Combinația de LR mic, batch size redus și arhitectură medie a oferit cea mai robustă generalizare. |
+
 2. **Tabel comparativ experimente** cu metrici și observații (vezi secțiunea dedicată)
+
+  
+   
 3. **Confusion Matrix** generată și analizată
 4. **Analiza detaliată a 5 exemple greșite** cu explicații cauzale
 5. **Metrici finali pe test set:**
@@ -699,3 +711,4 @@ Exemplu:
 ---
 
 **REMINDER:** Aceasta a fost ultima versiune pentru feedback. Următoarea predare este **VERSIUNEA FINALĂ PENTRU EXAMEN**!
+
