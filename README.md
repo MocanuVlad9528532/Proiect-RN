@@ -46,7 +46,7 @@ project-name/
 
 ### 2.2 Caracteristicile dataset-ului
 
-* **Număr total de observații:** [Ex: 15,000]
+* **Număr total de observații:6000
 * **Număr de caracteristici (features):** 3
 * **Tipuri de date:** ✔ Numerice / ☐ Categoriale / ☐ Temporale / ☐ Imagini
 * **Format fișiere:** ☐ CSV / ✔ TXT / ☐ JSON / ☐ PNG / ☐ Altele: [...]
@@ -159,7 +159,7 @@ Data Leakage (Scurgere de informație): S-a evitat prin calcularea parametrilor 
 
    Date preprocesate:
 
-Datele brute au fost salvate în fișierul baza_de_date_robot.csv pentru documentare.
+Datele brute au fost salvate în fișierul dataset_final.csv pentru documentare.
 
 Obiecte de preprocesare:
 
@@ -179,10 +179,10 @@ Obiectul scaler (MinMaxScaler) nu a fost salvat fizic în acest prototip, fiind 
 
 ##  6. Stare Etapă (de completat de student)
 
-- [ ] Structură repository configurată
-- [ ] Dataset analizat (EDA realizată)
-- [ ] Date preprocesate
-- [ ] Seturi train/val/test generate
-- [ ] Documentație actualizată în README + `data/README.md`
+- [x ] Structură repository configurată
+- [x ] Dataset analizat (EDA realizată)
+- [ x] Date preprocesate
+- [ x] Seturi train/val/test generate
+- [x ] Documentație actualizată în README + `data/README.md`
 
 ---
