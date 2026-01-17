@@ -60,7 +60,7 @@ Alegeți UNA sau MAI MULTE dintre variantele de mai jos și **demonstrați clar 
 | **Tip contribuție** | **Exemple concrete din inginerie** | **Dovada minimă cerută** |
 |---------------------|-------------------------------------|--------------------------|
 
-| Date generate prin simulare fizică | Simulare cinematică completă (Poziție, Viteză, Accelerație) a traiectoriei robotului, cu injectare de zgomot Gaussian variabil pentru a modela matematic cele 3 stări de degradare mecanică (Normal, Uzură Medie, Defect Critic) | Script Python (genereaza_set_date) funcțional și comentat. ; Fișierul baza_de_date_robot.csv cu 6000 eșantioane. ; Graficul "Vizualizare Traiectorie" care compară vizual traiectoria Ideală vs. Reală, validând parametrii de zgomot aleși.
+| Date generate prin simulare fizică | Simulare cinematică completă (Poziție, Viteză, Accelerație) a traiectoriei robotului, cu injectare de zgomot Gaussian variabil pentru a modela matematic cele 3 stări de degradare mecanică (Normal, Uzură Medie, Defect Critic) | Script Python (genereaza_set_date) funcțional și comentat. ; Fișierul dataset_final.csv cu 6000 eșantioane. ; Graficul "Vizualizare Traiectorie" care compară vizual traiectoria Ideală vs. Reală, validând parametrii de zgomot aleși.
 
 #### Declarație obligatorie în README:
 
@@ -84,13 +84,13 @@ Metoda de generare utilizează distribuții de probabilitate Gaussiană (Normal�
 
 Parametrii simulării au fost calibrați pentru a respecta limite fizice realiste (viteză max 100 mm/s, accelerație max 50 mm/s²), iar etichetarea (Labeling) s-a realizat automat în momentul generării, garantând o acuratețe de 100% a etichetelor de antrenare ("Ground Truth").
 
-**Locația codului:** `proiect_final_v2.py` (funcția `genereaza_set_date`)
-**Locația datelor:** `data/generated/baza_de_date_robot.csv`
+**Locația codului:** `main.py` 
+**Locația datelor:** `data/generated/dataset_final.csv`
 
 **Dovezi:**
 - Grafic comparativ: [Inserați aici screenshot-ul cu Vizualizare Traiectorie - Punct Verde vs Roșu]
 - Setup experimental: Nu este cazul (Simulare Software)
-- Tabel statistici: Vezi fișierul `baza_de_date_robot.csv` și Matricea de Confuzie generată la rulare.
+- Tabel statistici: Vezi fișierul `screenshots` și Matricea de Confuzie generată la rulare.
 
 #### Exemple pentru "contribuție originală":
 -Simulări fizice realiste cu ecuații și parametri justificați  
@@ -169,17 +169,17 @@ Proiectul SPDT este implementat integral în **Python**, integrând cele 3 modul
 
 | **Modul** | **Python (Implementare SPDT)** | **Status Livrabil** | **Cerință minimă funcțională** |
 |-----------|----------------------------------|-------------|----------------------------------------------|
-| **1. Data Logging / Acquisition** | `proiect_final_v2.py` (Funcția `genereaza_set_date`) | **COMPLET** (Generează `baza_de_date_robot.csv`) | **MUST:** Produce CSV cu datele (100% originale). Codul rulează fără erori și generează 6000 samples. |
-| **2. Neural Network Module** | `proiect_final_v2.py` (Keras Sequential Model) | **COMPLET** (Salvează `model_spdt.h5`) | **MUST:** Modelul MLP definit, compilat, antrenat și salvat cu succes. |
-| **3. Web Service / UI** | `proiect_final_v2.py` (Matplotlib HMI Window) | **COMPLET** (Vizualizare Grafică Live) | **MUST:** Primește input (scenariu simulat) și afișează un output grafic (Traiectorie + Diagnostic). |
+| **1. Data Logging / Acquisition** | `main.py` (Funcția `genereaza_set_date`) | **COMPLET** (Generează `dataset_fianl.csv`) | **MUST:** Produce CSV cu datele (100% originale). Codul rulează fără erori și generează 6000 samples. |
+| **2. Neural Network Module** | `main.py` (Keras Sequential Model) | **COMPLET** (Salvează `model_spdt.h5`) | **MUST:** Modelul MLP definit, compilat, antrenat și salvat cu succes. |
+| **3. Web Service / UI** | `main.py` (Matplotlib HMI Window) | **COMPLET** (Vizualizare Grafică Live) | **MUST:** Primește input (scenariu simulat) și afișează un output grafic (Traiectorie + Diagnostic). |
 
 #### Detalii per modul:
 
 #### **Modul 1: Data Logging / Acquisition**
 
 **Funcționalități obligatorii:**
-- [x] Cod rulează fără erori: `python proiect_final_v2.py`
-- [x] Generează CSV în format compatibil cu preprocesarea: Fișierul `baza_de_date_robot.csv` conține cele 8 caracteristici cinematice + eticheta clasei.
+- [x] Cod rulează fără erori: `python main.py`
+- [x] Generează CSV în format compatibil cu preprocesarea: Fișierul `dataset_final.csv` conține cele 8 caracteristici cinematice + eticheta clasei.
 - [x] Include minimum 40% date originale în dataset-ul final: **100% Original** (Simulare cinematică completă prin injectare de zgomot Gaussian).
 - [x] Documentație în cod: Scriptul include comentarii explicative despre parametrii de distribuție ai zgomotului pentru fiecare clasă.
 
@@ -195,7 +195,7 @@ Proiectul SPDT este implementat integral în **Python**, integrând cele 3 modul
 
 **Funcționalități MINIME obligatorii:**
 - [x] Propunere Interfață ce primește input de la user: S-a implementat o **Fereastră Grafică Interactivă (Matplotlib)** care simulează primirea unui nou set de date la fiecare rulare (simulare input senzor).
-- [x] Includeți un screenshot demonstrativ: Vezi `docs/vizualizare_traiectorie.png` (Graficul cu Punct Verde vs Roșu).
+- [x] Includeți un screenshot demonstrativ: Vezi `docs/live_inference.png` (Graficul cu Punct Verde vs Roșu).
 
 **Ce NU e necesar în Etapa 4 (dar abordat parțial):**
 - UI frumos/profesionist: Interfața este funcțională, axată pe vizualizarea tehnică a erorii (Digital Twin simplificat).
