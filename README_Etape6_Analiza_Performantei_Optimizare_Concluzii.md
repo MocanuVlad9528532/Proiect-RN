@@ -3,7 +3,7 @@
 **Disciplina:** Rețele Neuronale  
 **Instituție:** POLITEHNICA București – FIIR  
 **Student:** Mocanu Vlad-Cristian 
-**Link Repository GitHub:**  
+**Link Repository GitHub:** : https://github.com/MocanuVlad9528532/Proiect-RN.git 
 **Data predării:** 1/15/2026
 
 ---
@@ -86,88 +86,186 @@ Completați **TOATE** punctele următoare:
 | **Exp 3** | **High Regularization** | `[32, 16]` | LR=0.001<br>Batch=32 | Dropout (0.5) | **97.40%** | 0.9720 | **Underfitting**. Dropout-ul agresiv (50%) a "șters" prea multă informație, împiedicând modelul să învețe corelațiile fine. |
 | **Exp 4** | **OPTIMIZED (Final)** | **`[64, 32, 16]`** | **LR=0.0005**<br>**Batch=16** | **Dropout (0.2)**<br>**Batch Norm** | **99.85%** | **0.9984** | **Câștigător**. Combinația de LR mic, batch size redus și arhitectură medie a oferit cea mai robustă generalizare. |
 
-2. **Tabel comparativ experimente** cu metrici și observații (vezi secțiunea dedicată)
-
-  
-   
+2. **Tabel comparativ experimente** cu metrici și observații (vezi secțiunea dedicată) 
 3. **Confusion Matrix** generată și analizată
 4. **Analiza detaliată a 5 exemple greșite** cu explicații cauzale
-5. **Metrici finali pe test set:**
+
+Deși acuratețea globală a modelului optimizat este de peste 99%, există cazuri izolate în care rețeaua neuronală a clasificat greșit starea robotului. S-au extras și analizat manual 5 astfel de cazuri din setul de testare pentru a înțelege cauzele fundamentale.
+
+Interpretarea erorilor s-a făcut comparând **Ground Truth** (Eticheta Reală generată de simulator) cu **Predicția Modelului**.
+
+### Exemplul 1: Efectul de Graniță (Boundary Effect)
+* **Situație:**
+    * **Real (Etichetă):** `WARNING` (Clasa 1)
+    * **Predicție AI:** `OK` (Clasa 0)
+* **Date Măsurate:** Eroare Poziție = **4.85 mm**
+* **Analiză Cauzală:**
+    * Limita teoretică dintre starea *Normală* și *Warning* nu este o linie fixă, ci o suprapunere probabilistică.
+    * Deși eșantionul a fost generat de distribuția clasei Warning (centrată pe 12mm), valoarea specifică (4.85mm) a căzut în "coada" din stânga a clopotului Gauss, suprapunându-se cu valorile extreme ale clasei Normale.
+    * **Concluzie:** Este o eroare statistică inevitabilă în zonele de intersecție a distribuțiilor.
+
+### Exemplul 2: Conflict de Caracteristici (Feature Conflict)
+* **Situație:**
+    * **Real (Etichetă):** `WARNING` (Clasa 1)
+    * **Predicție AI:** `OK` (Clasa 0)
+* **Date Măsurate:** Eroare Poziție = **13.2 mm**, dar Viteză/Accelerație = **Foarte Stabile**.
+* **Analiză Cauzală:**
+    * Eroarea de poziție indica clar o uzură (Warning). Totuși, vectorii de viteză și accelerație au avut valori foarte apropiate de cele ideale (zgomot redus pe derivate).
+    * Rețeaua Neuronală a dat o pondere mai mare stabilității dinamice (viteză), ignorând parțial abaterea statică.
+    * **Concluzie:** Modelul a fost "păcălit" de o mișcare lină, deși traiectoria era decalată.
+
+### Exemplul 3: Clasificare Critică Ratată (False Negative - Periculos)
+* **Situație:**
+    * **Real (Etichetă):** `CRITICAL` (Clasa 2)
+    * **Predicție AI:** `WARNING` (Clasa 1)
+* **Date Măsurate:** Eroare Poziție = **28.5 mm** (Zona inferioară a clasei Critical).
+* **Analiză Cauzală:**
+    * Aceasta este cea mai periculoasă eroare. Eșantionul se afla la limita inferioară a defectelor critice (de obicei centrate pe 60mm).
+    * Modelul a interpretat valoarea de ~28mm ca fiind o uzură severă (Warning), nu un defect total.
+    * **Soluție:** Ajustarea pragului de decizie (Threshold) în `main.py`: dacă probabilitatea de Critical > 30%, se declanșează alarma, chiar dacă Warning are 60%.
+
+### Exemplul 4: Zgomot Senzor (Outlier)
+* **Situație:**
+    * **Real (Etichetă):** `OK` (Clasa 0)
+    * **Predicție AI:** `CRITICAL` (Clasa 2)
+* **Date Măsurate:** Poziție perfectă, dar Accelerație Reală = **Foarte Mare (Spike)**.
+* **Analiză Cauzală:**
+    * Generatorul de date a simulat un "șoc" de accelerație (posibilă eroare de citire senzor).
+    * Deși robotul era pe poziție, rețeaua a învățat că accelerațiile bruște sunt specifice defectelor mecanice grave și a clasificat preventiv ca fiind Critic.
+    * **Concluzie:** Aceasta este o eroare "pozitivă" (False Positive), preferabilă în industrie pentru siguranță.
+
+### Exemplul 5: Ambiguitate la Softmax
+* **Situație:**
+    * **Real (Etichetă):** `WARNING` (Clasa 1)
+    * **Predicție AI:** `INCERT / OK`
+* **Date Măsurate:** Valori intermediare pe toate axele.
+* **Analiză Probabilistică:**
+    * Ieșirea Softmax a fost: `OK: 48%`, `WARNING: 45%`, `CRITICAL: 7%`.
+    * Modelul a ales clasa `OK` la o diferență infimă (3%).
+    * **Cauza:** Modelul nu a avut suficientă încredere. Aceasta demonstrează necesitatea stării "INCERT" implementată în State Machine-ul din Etapa 6.
+
+---
+
+### Măsuri Corective Implementate
+
+Pe baza acestei analize, în aplicația finală (`main.py`) s-au adus următoarele îmbunătățiri:
+1.  **Confidence Threshold:** S-a introdus un prag de siguranță de 60%. Dacă nicio clasă nu depășește 60% (ca în Ex. 5), sistemul raportează "DIAGNOZĂ INCERTĂ" în loc să ghicească.
+2.  **Ponderare la Decizie:** S-a prioritizat clasa `Critical`. Dacă modelul detectează chiar și
+     
+6. **Metrici finali pe test set:**
    - **Acuratețe ≥ 70%** (îmbunătățire față de Etapa 5)
    - **F1-score (macro) ≥ 0.65**
-6. **Salvare model optimizat** în `models/optimized_model.h5` (sau `.pt`, `.lvmodel`)
-7. **Actualizare aplicație software:**
+7. **Salvare model optimizat** în `models/optimized_model.h5` (sau `.pt`, `.lvmodel`)
+8. **Actualizare aplicație software:**
    - Tabel cu modificările aduse aplicației în Etapa 6
    - UI încarcă modelul OPTIMIZAT (nu cel din Etapa 5)
    - Screenshot demonstrativ în `docs/screenshots/inference_optimized.png`
-8. **Concluzii tehnice** (minimum 1 pagină): performanță, limitări, lecții învățate
+9. **Concluzii tehnice** (minimum 1 pagină): performanță, limitări, lecții învățate
 
 #### Tabel Experimente de Optimizare
 
 Documentați **minimum 4 experimente** cu variații sistematice:
 
+### Tabel Experimente de Optimizare
+
+S-au rulat 4 experimente sistematice pornind de la configurația de bază din Etapa 5, variind arhitectura și hiperparametrii pentru a elimina erorile de graniță.
+
 | **Exp#** | **Modificare față de Baseline (Etapa 5)** | **Accuracy** | **F1-score** | **Timp antrenare** | **Observații** |
-|----------|------------------------------------------|--------------|--------------|-------------------|----------------|
-| Baseline | Configurația din Etapa 5 | 0.72 | 0.68 | 15 min | Referință |
-| Exp 1 | Learning rate 0.0001 → 0.001 | 0.74 | 0.70 | 12 min | Convergență mai rapidă |
-| Exp 2 | Batch size 32 → 64 | 0.71 | 0.67 | 10 min | Stabilitate redusă |
-| Exp 3 | +1 hidden layer (128 neuroni) | 0.76 | 0.73 | 22 min | Îmbunătățire semnificativă |
-| Exp 4 | Dropout 0.3 → 0.5 | 0.73 | 0.69 | 16 min | Reduce overfitting |
-| Exp 5 | Augmentări domeniu (zgomot gaussian) | 0.78 | 0.75 | 25 min | **BEST** - ales pentru final |
-
-**Justificare alegere configurație finală:**
-```
-Am ales Exp 5 ca model final pentru că:
-1. Oferă cel mai bun F1-score (0.75), critic pentru aplicația noastră de [descrieți]
-2. Îmbunătățirea vine din augmentări relevante domeniului industrial (zgomot gaussian 
-   calibrat la nivelul real de zgomot din mediul de producție: SNR ≈ 20dB)
-3. Timpul de antrenare suplimentar (25 min) este acceptabil pentru beneficiul obținut
-4. Testare pe date noi arată generalizare bună (nu overfitting pe augmentări)
-```
-
-**Resurse învățare rapidă - Optimizare:**
-- Hyperparameter Tuning: https://keras.io/guides/keras_tuner/ 
-- Grid Search: https://scikit-learn.org/stable/modules/grid_search.html
-- Regularization (Dropout, L2): https://keras.io/api/layers/regularization_layers/
+|:---|:---|:---|:---|:---|:---|
+| **Baseline** | Configurația Etapa 5 (`[32, 16]`, LR=0.001) | 99.10% | 0.9905 | ~45 sec | **Referință.** Performanță bună, dar curba Loss oscilează (instabilitate). |
+| **Exp 1** | Arhitectură Complexă (`[128, 64, 32]`) | 98.85% | 0.9870 | ~65 sec | **Overfitting.** Capacitate prea mare; a memorat zgomotul din datele de antrenament. |
+| **Exp 2** | Regularizare Agresivă (Dropout 0.0 → 0.5) | 97.40% | 0.9720 | ~45 sec | **Underfitting.** Dropout-ul a "șters" informația fină necesară distingerii claselor. |
+| **Exp 3** | Reducere Learning Rate (0.001 → 0.0005) | 99.45% | 0.9940 | ~50 sec | Convergență mai lentă dar mult mai stabilă; erori reduse la jumătate. |
+| **Exp 4** | **Final: Arhitectură Medie + LR 0.0005 + Batch 16** | **99.85%** | **0.9984** | ~55 sec | **BEST MODEL.** Combinația ideală. Batch-ul mic a ajutat la generalizare. |
 
 ---
 
-## 1. Actualizarea Aplicației Software în Etapa 6 
+### Analiză Vizuală a Rezultatelor
 
-**CERINȚĂ CENTRALĂ:** Documentați TOATE modificările aduse aplicației software ca urmare a optimizării modelului.
+Pentru a înțelege de ce Exp 1 (Prea complex) și Exp 2 (Prea simplificat) au eșuat comparativ cu Exp 4 (Optimizat), putem analiza comportamentul erorii:
+
+
+
+* **În Exp 1 (Overfitting):** Rețeaua a învățat "pe de rost" exemplele, comportându-se perfect la antrenament dar greșind la date noi.
+* **În Exp 3 (Learning Rate Mic):** Ajustarea ratei de învățare a permis modelului să găsească "fundul văii" în funcția de cost fără să sară peste el.
+
+
+**Justificare alegere configurație finală:**
+
+Am ales **Exp 4 (Optimized)** ca model final pentru că:
+1.  Oferă cel mai bun **F1-score (0.9984)**, critic pentru aplicația noastră de **diagnoză cinematică**, unde ne-detectarea unui defect (False Negative) poate duce la rebuturi sau coliziuni.
+2.  Îmbunătățirea vine din **ajustarea fină a Ratei de Învățare (0.0005)** și reducerea **Batch Size-ului (16)**. Aceasta a permis optimizatorului să navigheze mai precis suprafața funcției de cost, eliminând oscilațiile prezente în Baseline.
+3.  Stabilitatea este net superioară: spre deosebire de Exp 2 (Overfitting), acest model generalizează corect pe datele de test cu zgomot Gaussian ridicat ($\sigma \approx 60mm$ pentru clasa Critică), fără a memora zgomotul.
+4.  Timpul de antrenare a rămas foarte mic (~55 secunde), eficiența computațională fiind ideală pentru o eventuală rulare pe un sistem embedded (Edge AI).
+
+**Resurse învățare rapidă - Optimizare:**
+- Hyperparameter Tuning: [Keras Tuner Guide](https://keras.io/guides/keras_tuner/)
+- Grid Search: [Scikit-Learn Grid Search](https://scikit-learn.org/stable/modules/grid_search.html)
+- Regularization (Dropout, L2): [Keras Regularization Layers](https://keras.io/api/layers/regularization_layers/)
+
+---
+
+## 1. Actualizarea Aplicației Software în Etapa 6
+
+**CERINȚĂ CENTRALĂ:** Ca urmare a optimizării modelului neuronal (Exp 4), aplicația software (`src/app/main.py`) a fost refactorizată pentru a include mecanisme de siguranță industrială și o interfață îmbunătățită.
 
 ### Tabel Modificări Aplicație Software
 
-| **Componenta** | **Stare Etapa 5** | **Modificare Etapa 6** | **Justificare** |
-|----------------|-------------------|------------------------|-----------------|
-| **Model încărcat** | `trained_model.h5` | `optimized_model.h5` | +9% accuracy, -5% FN |
-| **Threshold alertă (State Machine)** | 0.5 (default) | 0.35 (clasa 'defect') | Minimizare FN în context industrial |
-| **Stare nouă State Machine** | N/A | `CONFIDENCE_CHECK` | Filtrare predicții cu confidence <0.6 |
-| **Latență target** | 100ms | 50ms (ONNX export) | Cerință timp real producție |
-| **UI - afișare confidence** | Da/Nu simplu | Bară progres + valoare % | Feedback operator îmbunătățit |
-| **Logging** | Doar predicție | Predicție + confidence + timestamp | Audit trail complet |
-| **Web Service response** | JSON minimal | JSON extins + metadata | Integrare API extern |
+| **Componenta** | **Stare Etapa 5 (Baseline)** | **Modificare Etapa 6 (Optimizat)** | **Justificare** |
+|:---|:---|:---|:---|
+| **Model încărcat** | `models/trained_model.h5` | **`models/optimized_model.h5`** | Acuratețe crescută (99.10% $\to$ **99.85%**) și stabilitate superioară pe date noi. |
+| **Logică Decizie (Threshold)** | `np.argmax()` (Default 0.5) | **Safety Bias** (>0.30 pentru `Critical`) | Minimizare drastică a **False Negatives**. Prioritizăm alerta de defect chiar dacă probabilitatea e mică. |
+| **Stare nouă State Machine** | N/A (Doar cele 3 clase) | **`UNCERTAIN_DIAGNOSIS`** | Filtrare predicții cu încredere < 60% (evită "ghicitul" în zone ambigue). |
+| **Latență Inferență** | ~0.15 ms | **~0.10 ms** | Optimizare arhitectură (straturi reduse la strictul necesar: `[64, 32, 16]`). |
+| **Interfață UI (Confidence)** | Text simplu (Consolă/Basic) | **Digital Twin Vizual + Bară Progres** | Afișare grafică a traiectoriei + Zone de toleranță și procentaj exact de încredere. |
+| **Logging** | Doar predicția finală | **Full Audit Trail** | Se salvează: Timestamp + Input + Probabilități per clasă + Decizie finală. |
+| **Web Service / Output** | Print în consolă | **Structură JSON Extinsă** | Ieșirea include metadata completă pentru integrare ulterioară cu sisteme SCADA. |
 
-**Completați pentru proiectul vostru:**
-```markdown
+### Snippet de Cod: Implementarea Logicii de Siguranță
+
+Mai jos este secvența de cod din `main.py` care demonstrează implementarea modificărilor de mai sus (Threshold și Safety Bias):
+
+```python
+# --- LOGICA ETAPA 6: SAFETY BIAS & UNCERTAINTY ---
+pred = model.predict(inp_scaled)
+probs = pred[0]  # ex: [0.65, 0.30, 0.05]
+
+# 1. Safety Bias: Dacă 'Critical' (idx=2) are > 30%, declanșăm alarma
+if probs[2] > 0.30:
+    cls_idx = 2
+    final_label = "CRITICAL (Safety Override)"
+    
+# 2. Confidence Check: Dacă nicio clasă nu trece de 60%
+elif np.max(probs) < 0.60:
+    cls_idx = -1
+    final_label = "DIAGNOZĂ INCERTĂ"
+    
+# 3. Standard: Luăm clasa cu probabilitatea maximă
+else:
+    cls_idx = np.argmax(probs)
+    final_label = labels[cls_idx] 
+**Completați pentru proiectul vostru:** ```
+```
 ### Modificări concrete aduse în Etapa 6:
 
 1. **Model înlocuit:** `models/trained_model.h5` → `models/optimized_model.h5`
-   - Îmbunătățire: Accuracy +X%, F1 +Y%
-   - Motivație: [descrieți de ce modelul optimizat e mai bun pentru aplicația voastră]
+   - **Îmbunătățire:** Accuracy **+0.75%** (de la 99.10% la 99.85%), F1-Score **+0.0079** (de la 0.9905 la 0.9984).
+   - **Motivație:** Modelul optimizat (Exp 4) utilizează o arhitectură echilibrată (`[64, 32, 16]`) și un Learning Rate ajustat fin (0.0005). Aceasta a eliminat oscilațiile observate la modelul Baseline și a redus rata erorilor false negative, oferind o stabilitate net superioară pe datele de graniță.
 
 2. **State Machine actualizat:**
-   - Threshold modificat: [valoare veche] → [valoare nouă]
-   - Stare nouă adăugată: [nume stare] - [ce face]
-   - Tranziție modificată: [descrieți]
+   - **Threshold modificat:** `argmax` (implict) → **Threshold Dinamic** (0.60 pentru validare, 0.30 pentru Safety Bias).
+   
+   - **Stare nouă adăugată:** `UNCERTAIN_DIAGNOSIS` (Diagnoză Incertă) - Se activează automat când nicio clasă nu depășește pragul de încredere de 60%, solicitând intervenția operatorului uman în loc să ofere o predicție instabilă.
+   - **Tranziție modificată:** S-a implementat **Safety Override**: tranziția către starea `CRITICAL` se declanșează prioritar dacă probabilitatea defectului depășește 30%, chiar dacă clasa dominantă este alta (minimiază riscul industrial).
 
 3. **UI îmbunătățit:**
-   - [descrieți modificările vizuale/funcționale]
-   - Screenshot: `docs/screenshots/ui_optimized.png`
+   - **Modificări:** S-a trecut de la o afișare text simplă la un **Digital Twin Vizual** folosind Matplotlib. Interfața randează acum traiectoria robotului (Punct Ideal vs Real), zonele de toleranță (cercuri concentrice) și o bară de progres pentru nivelul de încredere al AI-ului.
+   - **Screenshot:** `docs/screenshots/ui_optimized.png`
 
 4. **Pipeline end-to-end re-testat:**
-   - Test complet: input → preprocess → inference → decision → output
-   - Timp total: [X] ms (vs [Y] ms în Etapa 5)
+   - **Test complet:** Input Simulat → Preprocesare (Scaler) → Inferență (MLP) → Logică Decizie (Safety Bias) → Output UI.
+   
+   - **Timp total:** **~0.10 ms** (vs ~0.15 ms în Etapa 5), respectând cu strictețe cerința de timp real (< 50ms).
 ```
 
 ### Diagrama State Machine Actualizată (dacă s-au făcut modificări)
@@ -711,4 +809,5 @@ Exemplu:
 ---
 
 **REMINDER:** Aceasta a fost ultima versiune pentru feedback. Următoarea predare este **VERSIUNEA FINALĂ PENTRU EXAMEN**!
+
 
