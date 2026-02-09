@@ -1,0 +1,26 @@
+{
+    "project_name": "Industrial Predictive Maintenance AI",
+    "version": "v1.0-optimized",
+    "timestamp": "2026-01-22T15:04:38.387589",
+    "stage": "Etapa 6 - Optimizare & Safety Bias",
+    "model_metrics": {
+        "test_accuracy": 0.9985,
+        "test_f1_macro": 0.9984,
+        "test_loss": 0.0042
+    },
+    "class_performance": {
+        "critical_recall": 1.0,
+        "critical_precision": 0.999,
+        "warning_f1": 0.985,
+        "normal_f1": 0.9995
+    },
+    "hardware_stats": {
+        "inference_latency_ms": 0.12,
+        "throughput_predictions_per_sec": 8300,
+        "model_size_mb": 0.45
+    },
+    "status": {
+        "target_met": true,
+        "ready_for_deployment": true
+    }
+}
