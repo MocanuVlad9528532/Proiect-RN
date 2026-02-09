@@ -6,8 +6,8 @@
 | **Grupa / Specializare** | [633AB / Informatică Industrială] |
 | **Disciplina** | Rețele Neuronale |
 | **Instituție** | POLITEHNICA București – FIIR |
-| **Link Repository GitHub** | [URL complet - ex: https://github.com/username/proiect-rn] |
-| **Acces Repository** | [Public / Privat cu acces cadre didactice RN] |
+| **Link Repository GitHub** | [[URL complet - ex: https://github.com/username/proiect-rn](https://github.com/MocanuVlad9528532/Proiect-RN.git)] |
+| **Acces Repository** | [Public]  |
 | **Stack Tehnologic** | [Python] |
 | **Domeniul Industrial de Interes (DII)** | [Robotică ] |
 | **Tip Rețea Neuronală** | [ MLP ] |
