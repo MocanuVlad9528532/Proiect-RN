@@ -70,7 +70,7 @@ Acest proiect propune o soluție de **Mentenanță Predictivă bazată pe Inteli
 | **Prevenirea defectării neașteptate a motorului** | Clasificare multiclasă (Normal/Warning/Critical) bazată pe 8 senzori | `models/optimized_model.h5` (Rețea Neuronală) | **Accuracy > 99%** (Test Set) |
 | **Reacție instantanee la anomalii grave** | Procesare rapidă a datelor de intrare (Inferență optimizată) | `src/main.py` (Bucla de inferență) | **Latență < 0.5 ms** |
 | **Eliminarea erorilor de calibrare senzori** | Standardizarea datelor brute (Vibrații vs Temperatură) la o scară comună | `models/scaler_spdt.gz` (StandardScaler) | **Mean ~0, Std ~1** (pe datele de intrare) |
-| **Minimizarea riscului de accidente (Safety)** | Logică de "Safety Bias" care favorizează alarma în caz de incertitudine | `src/optimize.py` (Ponderare & Praguri) | **Recall (Critical) > 0.99** |
+| **Minimizarea riscului de accidente (Safety)** | Logică de "Safety Bias" care favorizează alarma în caz de incertitudine | `src/train_optimized.py` (Ponderare & Praguri) | **Recall (Critical) > 0.99** |
 
 ## 3. Dataset și Contribuție Originală
 
@@ -79,7 +79,7 @@ Acest proiect propune o soluție de **Mentenanță Predictivă bazată pe Inteli
 | Caracteristică | Valoare |
 |----------------|---------|
 | **Origine date** | **Simulare (Date Sintetice)** |
-| **Sursa concretă** | Script propriu Python (`src/optimize.py` - Generare cu `NumPy`) |
+| **Sursa concretă** | Script propriu Python (`src/train_optimized.py` - Generare cu `NumPy`) |
 | **Număr total observații finale (N)** | **5,000** (Simulate pentru antrenare, validare și testare) |
 | **Număr features** | **8** (Vibrații X/Y/Z, Temperatură, Curent, Tensiune, Presiune, RPM) |
 | **Tipuri de date** | **Numerice** (Continuous - Float32) și **Categoriale** (Target - Int) |
@@ -94,7 +94,7 @@ Acest proiect propune o soluție de **Mentenanță Predictivă bazată pe Inteli
 | **Observații originale (M)** | **5,000** |
 | **Procent contribuție originală** | **100%** |
 | **Tip contribuție** | **Generare Sintetică (Script Python propriu)** |
-| **Locație cod generare** | `src/optimize.py` |
+| **Locație cod generare** | `src/train_optimized.py` |
 | **Locație date originale** | `data/dataset_final.csv` (Generat la rulare) |
 
 **Descriere metodă generare/achiziție:**
@@ -158,7 +158,6 @@ Arhitectura de tip **State Machine (Automat cu Stări Finite)** este critică î
 |----------------------|----------------------------|-------------------------|------------------------|
 | **Prag Decizie (Threshold)** | `Argmax` (Standard) | `Safety Bias (Critical > 0.40)` | **Safety First:** Minimizarea alarmelor ratate (False Negatives) pentru starea CRITICAL. |
 | **Logică Inferență** | `Predict` simplu | `Predict` + `Root Cause Analysis` | **Explainable AI:** Identificarea senzorului specific care a cauzat anomalia (ex: Vibrație X). |
-| **Stare Nouă Adăugată** | N/A | `CONFIG_LOAD` | **Modularitate:** Încărcarea parametrilor din `optimized_config.yaml` pentru flexibilitate fără recompilare. |
 | **Gestionare Erori** | Crash la date invalide | `ERROR_HANDLER` robust (Try/Except) | **Stabilitate:** Prevenirea blocării interfeței de monitorizare în caz de eroare senzor. |
 
 ## 5. Modelul RN – Antrenare și Optimizare
@@ -206,7 +205,7 @@ Am optat pentru o arhitectură de tip Perceptron Multistrat (MLP / Feed-Forward)
 
 Am ales configurația finală (Exp 4) deoarece oferă cel mai bun compromis între performanță și stabilitate. Deși modelul din Exp 1 avea o acuratețe brută mare, acesta risca să memoreze zgomotul din date (overfitting). Varianta finală, cu arhitectura "pâlnie" (64->32) și Dropout moderat (0.3), filtrează eficient informația relevantă, iar rata de învățare redusă (0.0005) a permis ajustarea fină a greutăților pentru a atinge o acuratețe de aproape 100% pe setul de test, menținând o latență de inferență neglijabilă (<1ms).
 
-**Referințe fișiere:** `src/optimize.py` (Logurile de antrenare), `models/optimized_model.h5`
+**Referințe fișiere:** `src/train_optimized.py` (Logurile de antrenare), `models/optimized_model.h5`
 
 ## 6. Performanță Finală și Analiză Erori
 
@@ -273,7 +272,7 @@ Pe de altă parte, modelul poate genera **2-3 alarme false** pe săptămână (F
 | **Model încărcat** | `baseline_model.h5` (Simplu) | `models/optimized_model.h5` | **+17% Accuracy**, Arhitectură optimizată (64->32 neuroni) cu Dropout. |
 | **Threshold decizie** | `Argmax` (Standard) | **Safety Bias** (Critical > 0.40) | Minimizarea **False Negatives** pentru a garanta oprirea utilajului la risc. |
 | **Interfață (UI)** | `print()` simplu în consolă | **Rich CLI Dashboard** (Tabel dinamic) | Vizualizare clară, colorată (Roșu/Verde) pentru operatori în `src/main.py`. |
-| **Organizare Cod** | Script monolithic (totul într-un fișier) | **Separare Antrenare / Inferență** | Modularitate: `optimize.py` generează modelul, `main.py` îl folosește. |
+| **Organizare Cod** | Script monolithic (totul într-un fișier) | **Separare Antrenare / Inferență** | Modularitate: `train_optimized.py` generează modelul, `main.py` îl folosește. |
 | **Preprocesare** | Recalculare pe date noi | Încărcare `models/scaler_spdt.gz` | **Data Consistency:** Garantarea că datele live sunt scalate matematic identic cu cele de antrenament. |
 
 ### 7.2 Screenshot UI cu Model Optimizat
@@ -391,7 +390,7 @@ proiect-rn-[nume-prenume]/
 | Folder / Fișier | Etapa 3 (Analiză) | Etapa 4 (Arhitectură) | Etapa 5 (Baseline) | Etapa 6 (Final - Optimizat) |
 |-----------------|:-------:|:-------:|:-------:|:-------:|
 | `data/dataset_final.csv` | - | - | ✓ Generat | **Actualizat (Sintetic)** |
-| `src/optimize.py` (Include DataGen & Train) | - | - | - | **✓ Creat (All-in-One)** |
+| `src/train_optimized.py` (Include DataGen & Train) | - | - | - | **✓ Creat (All-in-One)** |
 | `src/main.py` (Interfață Monitorizare) | - | ✓ Schelet | ✓ Funcțional | **✓ Optimizat (Rich UI)** |
 | `models/optimized_model.h5` | - | - | - | **✓ Creat (Best Model)** |
 | `models/scaler_spdt.gz` | - | - | - | **✓ Creat** |
@@ -502,7 +501,7 @@ N/A - Proiect implementat exclusiv în Python.
 2. **Safety Bias este critic:** Acuratețea globală (Accuracy) este înșelătoare în industrie. Ajustarea pragului de decizie (Threshold 0.40) pentru clasa CRITICAL a fost esențială pentru a garanta siguranța, chiar dacă a crescut ușor numărul de alarme false.
 3. **Standardizarea Datelor:** Fără `StandardScaler`, modelul nu convergea deloc, deoarece Temperatura (80°C) domina numeric Vibrațiile (0.5 mm/s). Aducerea tuturor la media 0 și deviația 1 a fost pasul decisiv.
 4. **Importanța Dropout-ului:** Pe date sintetice, riscul de Overfitting este imens. Introducerea `Dropout(0.3)` a forțat rețeaua să învețe corelații robuste, nu doar să memoreze exemplele de antrenament.
-5. **Separarea Training vs Inference:** Organizarea codului în două scripturi distincte (`optimize.py` pentru inginer, `main.py` pentru operator) a clarificat fluxul de lucru și a simulat un mediu de producție real.
+5. **Separarea Training vs Inference:** Organizarea codului în două scripturi distincte (`train_optimized.py` pentru inginer, `main.py` pentru operator) a clarificat fluxul de lucru și a simulat un mediu de producție real.
 
 ### 10.4 Retrospectivă
 
@@ -565,7 +564,7 @@ Aceasta ar necesita înlocuirea straturilor `Dense` cu straturi `LSTM` sau `Conv
 ### Verificare Anti-Plagiat
 
 - [x] Model antrenat **de la zero** (weights inițializate random, nu descărcate)
-- [x] **Minimum 40% date originale** (100% - Generare Sintetică Proprie, cod `src/optimize.py`)
+- [x] **Minimum 40% date originale** (100% - Generare Sintetică Proprie, cod `src/train_optimized.py`)
 - [x] **Cod propriu sau clar atribuit** (Sursele Keras/TensorFlow citate în Bibliografie)
 
 ---
